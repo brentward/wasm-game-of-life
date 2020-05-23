@@ -11,11 +11,21 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 extern crate web_sys;
 
+#[cfg(not(test))]
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
 }
+
+#[cfg(test)]
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        print!("[TEST LOG] ");
+        &println!( $( $t )* );
+    }
+}
+
 
 #[wasm_bindgen]
 #[repr(u8)]
@@ -54,10 +64,13 @@ impl Universe {
         count
     }
 
+    /// Get the dead and alive values of the entire universe.
     pub fn get_cells(&self) -> &[Cell] {
         &self.cells
     }
 
+    /// Set cells to be alive in a universe by passing the row and column
+    /// of each cell as an array.
     pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
         for (row, col) in cells.iter().cloned() {
             let idx = self.get_index(row, col);
@@ -69,6 +82,31 @@ impl Universe {
 /// Public methods, exported to JavaScript.
 #[wasm_bindgen]
 impl Universe {
+    pub fn new() -> Universe {
+        utils::set_panic_hook();
+        let width = 64;
+        let height = 64;
+        // let cells = (0..width * height)
+        //     .map(|_i| {
+        //         if Math::random() < 0.5 {
+        //             Cell::Alive
+        //         } else {
+        //             Cell::Dead
+        //         }
+        //     })
+        //     .collect();
+        let cells = (0..width * height).map(|_i| Cell::Dead).collect();
+
+        let mut universe = Universe {
+            width,
+            height,
+            cells,
+        };
+        universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
+        universe
+
+    }
+
     pub fn tick(&mut self) {
         let mut next = self.cells.clone();
 
@@ -119,28 +157,6 @@ impl Universe {
         self.cells = next;
     }
 
-    pub fn new() -> Universe {
-        utils::set_panic_hook();
-        let width = 64;
-        let height = 64;
-
-        let cells = (0..width * height)
-            .map(|_i| {
-                if Math::random() < 0.5 {
-                    Cell::Alive
-                } else {
-                    Cell::Dead
-                }
-            })
-            .collect();
-
-        Universe {
-            width,
-            height,
-            cells,
-        }
-    }
-
     pub fn render(&self) -> String {
         self.to_string()
     }
@@ -181,5 +197,33 @@ impl fmt::Display for Universe {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_spaceship() {
+        let mut input_universe = Universe::new();
+        input_universe.set_width(6);
+        input_universe.set_height(6);
+        input_universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
+
+
+        let mut expected_universe = Universe::new();
+        expected_universe.set_width(6);
+        expected_universe.set_height(6);
+        expected_universe.set_cells(&[(2,1), (2,3), (3,2), (3,3), (4,2)]);
+
+        println!("input universe before tick:");
+        println!("{}", input_universe.render());
+        input_universe.tick();
+        println!("\ninput universe:");
+        println!("{}", input_universe.render());
+        println!("\nexpected universe:");
+        println!("{}", expected_universe.render());
+        assert_eq!(&input_universe.get_cells(), &expected_universe.get_cells());
     }
 }
