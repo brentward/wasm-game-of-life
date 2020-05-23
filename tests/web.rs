@@ -41,3 +41,31 @@ pub fn test_tick() {
     input_universe.tick();
     assert_eq!(&input_universe.get_cells(), &expected_universe.get_cells());
 }
+
+#[cfg(test)]
+pub fn input_bar() -> Universe {
+    let mut universe = Universe::new();
+    universe.set_width(5);
+    universe.set_height(5);
+    universe.set_cells(&[(2,1), (2,2), (2,3)]);
+    universe
+}
+
+#[cfg(test)]
+pub fn expected_bar() -> Universe {
+    let mut universe = Universe::new();
+    universe.set_width(5);
+    universe.set_height(5);
+    universe.set_cells(&[(1,2), (2,2), (3,2)]);
+    universe
+}
+
+#[wasm_bindgen_test]
+pub fn test_tick_bar() {
+    let mut input_universe = input_bar();
+
+    let expected_universe = expected_bar();
+
+    input_universe.tick();
+    assert_eq!(&input_universe.get_cells(), &expected_universe.get_cells());
+}
