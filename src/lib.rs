@@ -63,9 +63,7 @@ impl Universe {
         }
         count
     }
-}
 
-impl Universe {
     /// Get the dead and alive values of the entire universe.
     pub fn get_cells(&self) -> &[Cell] {
         &self.cells
@@ -79,12 +77,36 @@ impl Universe {
             self.cells[idx] = Cell::Alive;
         }
     }
-
 }
 
 /// Public methods, exported to JavaScript.
 #[wasm_bindgen]
 impl Universe {
+    pub fn new() -> Universe {
+        utils::set_panic_hook();
+        let width = 64;
+        let height = 64;
+        // let cells = (0..width * height)
+        //     .map(|_i| {
+        //         if Math::random() < 0.5 {
+        //             Cell::Alive
+        //         } else {
+        //             Cell::Dead
+        //         }
+        //     })
+        //     .collect();
+        let cells = (0..width * height).map(|_i| Cell::Dead).collect();
+
+        let mut universe = Universe {
+            width,
+            height,
+            cells,
+        };
+        universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
+        universe
+
+    }
+
     pub fn tick(&mut self) {
         let mut next = self.cells.clone();
 
@@ -133,31 +155,6 @@ impl Universe {
         }
 
         self.cells = next;
-    }
-
-    pub fn new() -> Universe {
-        utils::set_panic_hook();
-        let width = 64;
-        let height = 64;
-        // let cells = (0..width * height)
-        //     .map(|_i| {
-        //         if Math::random() < 0.5 {
-        //             Cell::Alive
-        //         } else {
-        //             Cell::Dead
-        //         }
-        //     })
-        //     .collect();
-        let cells = (0..width * height).map(|_i| Cell::Dead).collect();
-
-        let mut universe = Universe {
-            width,
-            height,
-            cells,
-        };
-        universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
-        universe
-
     }
 
     pub fn render(&self) -> String {
