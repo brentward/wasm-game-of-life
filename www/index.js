@@ -25,8 +25,6 @@ const renderLoop = () => {
     requestAnimationFrame(renderLoop);
 };
 
-requestAnimationFrame(renderLoop);
-
 const drawGrid = () => {
     ctx.beginPath();
     ctx.strokeStyle = GRID_COLOR;
