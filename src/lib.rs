@@ -35,6 +35,15 @@ pub enum Cell {
     Alive = 1,
 }
 
+impl Cell {
+    fn toggle(&mut self) {
+        *self = match *self {
+            Cell::Dead => Cell::Alive,
+            Cell::Alive => Cell::Dead,
+        };
+    }
+}
+
 #[wasm_bindgen]
 pub struct Universe {
     width: u32,
@@ -73,9 +82,104 @@ impl Universe {
     /// of each cell as an array.
     pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
         for (row, col) in cells.iter().cloned() {
-            let idx = self.get_index(row, col);
+            let idx = self.get_index(row % self.height, col % self.width);
             self.cells[idx] = Cell::Alive;
         }
+    }
+
+    fn clear_cells(&mut self, row: u32, col: u32, h_size: u32, v_size: u32) {
+        for row in row..row + h_size {
+            for col in col..col + v_size {
+                let idx = self.get_index(row, col);
+                self.cells[idx] = Cell::Dead;
+            }
+        }
+    }
+
+    pub fn place_block(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 2, 2);
+        self.set_cells(&[(row, col), (row,col + 1),
+            (row + 1, col), (row + 1, col + 1)])
+    }
+
+    pub fn place_blinker(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 3, 1);
+        self.set_cells(&[(row, col), (row, col + 1), (row, col + 2)])
+    }
+
+    pub fn place_toad(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 4, 2);
+        self.set_cells(&[(row, col + 1), (row, col + 2), (row,col + 3),
+            (row + 1, col), (row + 1, col + 1), (row + 1, col + 2)])
+    }
+
+    pub fn place_beacon(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 4, 4);
+        self.set_cells(&[(row, col), (row, col + 1),
+            (row + 1, col),
+            (row + 2, col + 3),
+            (row + 3, col + 2), (row + 3, col + 3)])
+    }
+
+    pub fn place_pulsar(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 13, 13);
+        self.set_cells(&[(row, col + 2), (row, col + 3), (row, col + 4), (row, col + 8), (row, col + 9), (row, col + 10),
+            (row + 2,col), (row + 2, col + 5), (row + 2,col + 7), (row + 2, col + 12),
+            (row + 3,col), (row + 3, col + 5), (row + 3,col + 7), (row + 3, col + 12),
+            (row + 4,col), (row + 4, col + 5), (row + 4,col + 7), (row + 4, col + 12),
+            (row + 5, col + 2), (row + 5, col + 3), (row + 5, col + 4), (row + 5, col + 8), (row + 5, col + 9), (row + 5, col + 10),
+            (row + 7, col + 2), (row + 7, col + 3), (row + 7, col + 4), (row + 7, col + 8), (row + 7, col + 9), (row + 7, col + 10),
+            (row + 8,col), (row + 8, col + 5), (row + 8,col + 7), (row + 8, col + 12),
+            (row + 9,col), (row + 9, col + 5), (row + 9,col + 7), (row + 9, col + 12),
+            (row + 10,col), (row + 10, col + 5), (row + 10,col + 7), (row + 10, col + 12),
+            (row + 12, col + 2), (row + 12, col + 3), (row + 12, col + 4), (row + 12, col + 8), (row + 12, col + 9), (row + 12, col + 10)])
+    }
+
+    pub fn place_i_column(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 3, 12);
+        self.set_cells(&[(row, col), (row, col + 1), (row, col + 2),
+            (row + 1, col + 1),
+            (row + 2, col + 1),
+            (row + 3, col), (row + 3, col + 1), (row + 3, col + 2),
+            (row + 5, col), (row + 5, col + 1), (row + 5, col + 2),
+            (row + 6, col), (row + 6, col + 1), (row + 6, col + 2),
+            (row + 8, col), (row + 8, col + 1), (row + 8, col + 2),
+            (row + 9, col + 1),
+            (row + 10, col + 1),
+            (row + 11, col), (row + 11, col + 1), (row + 11, col + 2)])
+    }
+
+    pub fn place_glider(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 3, 3);
+        self.set_cells(&[(row, col + 1),
+            (row + 1, col + 2),
+            (row + 2, col), (row + 2,col + 1), (row + 2, col + 2)]);
+    }
+
+    pub fn place_lwss(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 5, 4);
+        self.set_cells(&[(row, col + 1), (row, col + 2), (row, col + 3), (row, col + 4),
+            (row + 1, col), (row + 1,col + 4),
+            (row + 2, col + 4),
+            (row + 3, col), (row + 3, col + 3)]);
+    }
+
+    pub fn place_mwss(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 6, 5);
+        self.set_cells(&[(row, col + 1), (row, col + 2), (row, col + 3), (row, col + 4), (row, col + 5),
+            (row + 1, col), (row + 1, col + 5),
+            (row + 2, col + 5),
+            (row + 3, col), (row + 3, col + 4),
+            (row + 4, col + 2)]);
+    }
+
+    pub fn place_hwss(&mut self, row: u32, col: u32) {
+        self.clear_cells(row, col, 7, 5);
+        self.set_cells(&[(row, col + 1), (row, col + 2), (row, col + 3), (row, col + 4), (row, col + 5), (row, col + 6),
+            (row + 1, col), (row + 1, col + 6),
+            (row + 2, col + 6),
+            (row + 3, col), (row + 3, col + 5),
+            (row + 4, col + 2), (row + 4, col + 3)]);
     }
 }
 
@@ -97,13 +201,13 @@ impl Universe {
         //     .collect();
         let cells = (0..width * height).map(|_i| Cell::Dead).collect();
 
-        let mut universe = Universe {
+        Universe {
             width,
             height,
             cells,
-        };
-        universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
-        universe
+        }
+        // universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
+        // universe
 
     }
 
@@ -181,6 +285,28 @@ impl Universe {
     pub fn set_height(&mut self, height: u32) {
         self.height = height;
         self.cells = (0..self.width * height).map(|_i| Cell::Dead).collect();
+    }
+
+    pub fn toggle_cell(&mut self, row: u32, col: u32) {
+        let idx = self.get_index(row, col);
+        self.cells[idx].toggle();
+    }
+
+    pub fn insert(&mut self, command: String, row: u32, col: u32) {
+        match command.as_str() {
+            "toggle" => self.toggle_cell(row, col),
+            "block" => self.place_block(row, col),
+            "blinker" => self.place_blinker(row, col),
+            "toad" => self.place_toad(row, col),
+            "beacon" => self.place_beacon(row, col),
+            "pulsar" => self.place_pulsar(row, col),
+            "i-column" => self.place_i_column(row, col),
+            "glider" => self.place_glider(row, col),
+            "lwss" => self.place_lwss(row, col),
+            "mwss" => self.place_mwss(row, col),
+            "hwss" => self.place_hwss(row, col),
+            _ => self.toggle_cell(row, col),
+        }
     }
 }
 
