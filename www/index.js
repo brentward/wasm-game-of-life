@@ -1,7 +1,7 @@
 import { Universe, Cell } from "wasm-game-of-life";
 import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
-const CELL_SIZE = 5; // px
+const CELL_SIZE = 8; // px
 const GRID_COLOR = "#CCCCCC";
 const DEAD_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
@@ -15,14 +15,11 @@ canvas.height = (CELL_SIZE + 1) * height + 1;
 canvas.width = (CELL_SIZE + 1) * width + 1;
 
 canvas.addEventListener("click", event => {
-    const rbs = document.querySelectorAll('input[name="insert"]');
-    let insert = "toggle";
-    for (const rb of rbs) {
-        if (rb.checked) {
-            insert = rb.value;
-            break;
-        }
-    }
+    const insertPopulation = document.getElementById("insert").value;
+    const hFlip = document.getElementById("h-flip").checked;
+    const vFlip = document.getElementById("v-flip").checked;
+    const invert = document.getElementById("invert").checked;
+
     const boundingRect = canvas.getBoundingClientRect();
 
     const scaleX = canvas.width / boundingRect.width;
@@ -34,7 +31,11 @@ canvas.addEventListener("click", event => {
     const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
     const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
 
-    universe.insert(insert, row, col);
+    if (insertPopulation === "toggle") {
+        universe.toggle_cell(row, col);
+    } else {
+        universe.seed_population(row, col, insertPopulation, hFlip, vFlip, invert);
+    }
 
     drawGrid();
     drawCells();
@@ -59,7 +60,11 @@ const isPaused = () => {
 };
 
 const playPauseButton = document.getElementById("play-pause");
+const destroyAllLife = document.getElementById("destroy-all-life");
+const randomPopulation = document.getElementById("random-population");
 playPauseButton.textContent = "❚❚";
+destroyAllLife.textContent = "Destroy All Life";
+randomPopulation.textContent = "Random Population";
 
 const play = () => {
     playPauseButton.textContent = "❚❚";
@@ -78,6 +83,18 @@ playPauseButton.addEventListener("click", event => {
     } else {
         pause();
     }
+});
+
+destroyAllLife.addEventListener("click", event => {
+    universe.destroy_all_life();
+    drawGrid();
+    drawCells();
+});
+
+randomPopulation.addEventListener("click", event => {
+    universe.random_population();
+    drawGrid();
+    drawCells();
 });
 
 const drawGrid = () => {
