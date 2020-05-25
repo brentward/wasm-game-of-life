@@ -1,5 +1,7 @@
 mod utils;
 
+use std::vec;
+
 use wasm_bindgen::prelude::*;
 use js_sys::Math;
 
@@ -41,6 +43,104 @@ impl Cell {
             Cell::Dead => Cell::Alive,
             Cell::Alive => Cell::Dead,
         };
+    }
+}
+
+#[wasm_bindgen]
+pub struct Population {
+    height: u32,
+    width: u32,
+    h_flip: bool,
+    v_flip: bool,
+    invert: bool,
+    cells: Vec<(u32, u32)>,
+}
+
+#[wasm_bindgen]
+impl Population {
+    pub fn new(name: String, h_flip: bool, v_flip: bool, invert: bool) -> Population {
+        let (cells, height, width) = match name.as_str() {
+            "block" => (vec![
+                (0, 0), (0,1),
+                (1, 0), (1, 1)
+            ], 2, 2),
+            "blinker" => (vec![
+                (0, 0), (0, 1), (0, 2)
+            ], 1, 3),
+            "toad" => (vec![
+                        (0, 1), (0, 2), (0,3),
+                (1, 0), (1, 1), (1, 2)
+            ], 2, 4),
+            "beacon" => (vec![
+                (0, 0), (0, 1),
+                (1, 0),
+                                (2, 3),
+                        (3, 2), (3, 3)
+            ], 4, 4),
+            "pulsar" => (vec![
+                                (0, 2), (0, 3), (0, 4),                         (0, 8), (0, 9), (0, 10),
+                (2, 0),                                 (2, 5),         (2, 7),                                 (2, 12),
+                (3 ,0),                                 (3, 5),         (3, 7),                                 (3, 12),
+                (4, 0),                                 (4, 5),         (4, 7),                                 (4, 12),
+                                (5, 2), (5, 3), (5, 4),                         (5, 8), (5, 9), (5, 10),
+                                (7, 2), (7, 3), (7, 4),                         (7, 8), (7, 9), (7, 10),
+                (8, 0),                                 (8, 5),         (8, 7),                                 (8, 12),
+                (9, 0),                                 (9, 5),         (9, 7),                                 (9, 12),
+                (10,0),                                 (10,5),         (10,7),                                 (10,12),
+                                (12,2), (12,3), (12,4),                         (12,8), (12,9), (12,10)
+            ], 13, 13),
+            "i-column" => (vec![
+                (0, 0), (0, 1), (0, 2),
+                        (1, 1),
+                        (2, 1),
+                (3, 0), (3, 1), (3, 2),
+
+                (5, 0), (5, 1), (5, 2),
+                (6, 0), (6, 1), (6, 2),
+
+                (8, 0), (8, 1), (8, 2),
+                        (9, 1),
+                        (10,1),
+                (11,0), (11,1), (11,2)
+            ], 12, 3),
+            "glider" => (vec![
+                        (0, 1),
+                                (1, 2),
+                (2, 0), (2, 1), (2, 2)
+            ], 3, 3),
+            "lwss" => (vec![
+                        (0, 1), (0, 2), (0, 3), (0, 4),
+                (1, 0),                         (1, 4),
+                                                (2, 4),
+                (3, 0),                 (3, 3)
+            ], 4, 5),
+            "mwss" => (vec![
+                        (0, 1), (0, 2), (0, 3), (0, 4), (0, 5),
+                (1, 0),                                 (1, 5),
+                                                        (2, 5),
+                (3, 0),                         (3, 4),
+                                (4, 2)
+            ], 5, 6),
+            "hwss" => (vec![
+                        (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6),
+                (1, 0),                                         (1, 6),
+                                                                (2, 6),
+                (3, 0),                                 (3, 5),
+                                (4, 2), (4, 3)
+            ], 5, 7),
+            _ => (vec![
+                (0, 0), (0,1),
+                (1, 0), (1, 1)
+            ], 2, 2),
+        };
+        Population {
+            height,
+            width,
+            h_flip,
+            v_flip,
+            invert,
+            cells
+        }
     }
 }
 
@@ -95,92 +195,6 @@ impl Universe {
             }
         }
     }
-
-    pub fn place_block(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 2, 2);
-        self.set_cells(&[(row, col), (row,col + 1),
-            (row + 1, col), (row + 1, col + 1)])
-    }
-
-    pub fn place_blinker(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 3, 1);
-        self.set_cells(&[(row, col), (row, col + 1), (row, col + 2)])
-    }
-
-    pub fn place_toad(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 4, 2);
-        self.set_cells(&[(row, col + 1), (row, col + 2), (row,col + 3),
-            (row + 1, col), (row + 1, col + 1), (row + 1, col + 2)])
-    }
-
-    pub fn place_beacon(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 4, 4);
-        self.set_cells(&[(row, col), (row, col + 1),
-            (row + 1, col),
-            (row + 2, col + 3),
-            (row + 3, col + 2), (row + 3, col + 3)])
-    }
-
-    pub fn place_pulsar(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 13, 13);
-        self.set_cells(&[(row, col + 2), (row, col + 3), (row, col + 4), (row, col + 8), (row, col + 9), (row, col + 10),
-            (row + 2,col), (row + 2, col + 5), (row + 2,col + 7), (row + 2, col + 12),
-            (row + 3,col), (row + 3, col + 5), (row + 3,col + 7), (row + 3, col + 12),
-            (row + 4,col), (row + 4, col + 5), (row + 4,col + 7), (row + 4, col + 12),
-            (row + 5, col + 2), (row + 5, col + 3), (row + 5, col + 4), (row + 5, col + 8), (row + 5, col + 9), (row + 5, col + 10),
-            (row + 7, col + 2), (row + 7, col + 3), (row + 7, col + 4), (row + 7, col + 8), (row + 7, col + 9), (row + 7, col + 10),
-            (row + 8,col), (row + 8, col + 5), (row + 8,col + 7), (row + 8, col + 12),
-            (row + 9,col), (row + 9, col + 5), (row + 9,col + 7), (row + 9, col + 12),
-            (row + 10,col), (row + 10, col + 5), (row + 10,col + 7), (row + 10, col + 12),
-            (row + 12, col + 2), (row + 12, col + 3), (row + 12, col + 4), (row + 12, col + 8), (row + 12, col + 9), (row + 12, col + 10)])
-    }
-
-    pub fn place_i_column(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 3, 12);
-        self.set_cells(&[(row, col), (row, col + 1), (row, col + 2),
-            (row + 1, col + 1),
-            (row + 2, col + 1),
-            (row + 3, col), (row + 3, col + 1), (row + 3, col + 2),
-            (row + 5, col), (row + 5, col + 1), (row + 5, col + 2),
-            (row + 6, col), (row + 6, col + 1), (row + 6, col + 2),
-            (row + 8, col), (row + 8, col + 1), (row + 8, col + 2),
-            (row + 9, col + 1),
-            (row + 10, col + 1),
-            (row + 11, col), (row + 11, col + 1), (row + 11, col + 2)])
-    }
-
-    pub fn place_glider(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 3, 3);
-        self.set_cells(&[(row, col + 1),
-            (row + 1, col + 2),
-            (row + 2, col), (row + 2,col + 1), (row + 2, col + 2)]);
-    }
-
-    pub fn place_lwss(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 5, 4);
-        self.set_cells(&[(row, col + 1), (row, col + 2), (row, col + 3), (row, col + 4),
-            (row + 1, col), (row + 1,col + 4),
-            (row + 2, col + 4),
-            (row + 3, col), (row + 3, col + 3)]);
-    }
-
-    pub fn place_mwss(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 6, 5);
-        self.set_cells(&[(row, col + 1), (row, col + 2), (row, col + 3), (row, col + 4), (row, col + 5),
-            (row + 1, col), (row + 1, col + 5),
-            (row + 2, col + 5),
-            (row + 3, col), (row + 3, col + 4),
-            (row + 4, col + 2)]);
-    }
-
-    pub fn place_hwss(&mut self, row: u32, col: u32) {
-        self.clear_cells(row, col, 7, 5);
-        self.set_cells(&[(row, col + 1), (row, col + 2), (row, col + 3), (row, col + 4), (row, col + 5), (row, col + 6),
-            (row + 1, col), (row + 1, col + 6),
-            (row + 2, col + 6),
-            (row + 3, col), (row + 3, col + 5),
-            (row + 4, col + 2), (row + 4, col + 3)]);
-    }
 }
 
 /// Public methods, exported to JavaScript.
@@ -190,15 +204,6 @@ impl Universe {
         utils::set_panic_hook();
         let width = 64;
         let height = 64;
-        // let cells = (0..width * height)
-        //     .map(|_i| {
-        //         if Math::random() < 0.5 {
-        //             Cell::Alive
-        //         } else {
-        //             Cell::Dead
-        //         }
-        //     })
-        //     .collect();
         let cells = (0..width * height).map(|_i| Cell::Dead).collect();
 
         Universe {
@@ -206,9 +211,6 @@ impl Universe {
             height,
             cells,
         }
-        // universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
-        // universe
-
     }
 
     pub fn tick(&mut self) {
@@ -292,20 +294,48 @@ impl Universe {
         self.cells[idx].toggle();
     }
 
-    pub fn insert(&mut self, command: String, row: u32, col: u32) {
-        match command.as_str() {
-            "toggle" => self.toggle_cell(row, col),
-            "block" => self.place_block(row, col),
-            "blinker" => self.place_blinker(row, col),
-            "toad" => self.place_toad(row, col),
-            "beacon" => self.place_beacon(row, col),
-            "pulsar" => self.place_pulsar(row, col),
-            "i-column" => self.place_i_column(row, col),
-            "glider" => self.place_glider(row, col),
-            "lwss" => self.place_lwss(row, col),
-            "mwss" => self.place_mwss(row, col),
-            "hwss" => self.place_hwss(row, col),
-            _ => self.toggle_cell(row, col),
+    pub fn seed_population(&mut self, row: u32, col: u32, pop_name: String, h_flip: bool, v_flip: bool, invert: bool) {
+        let pop = Population::new(pop_name, h_flip, v_flip, invert);
+        let mut cells = Vec::new();
+        for (seed_row, seed_col) in pop.cells {
+            let (seed_row, seed_col) = if pop.invert {
+                (seed_col, seed_row)
+            } else {
+                (seed_row, seed_col)
+            };
+            let row = if pop.v_flip {
+                row + pop.height - seed_row
+            } else {
+                row + seed_row
+            };
+            let col = if pop.h_flip {
+                col + pop.width - seed_col
+            } else {
+                col + seed_col
+            };
+            cells.push((row, col));
+        }
+        self.clear_cells(row, col, pop.width, pop.height);
+        self.set_cells(cells.as_slice());
+    }
+
+    pub fn destroy_all_life(&mut self) {
+        self.clear_cells(0, 0, self.width, self.height);
+    }
+
+    pub fn random_population(&mut self) {
+        self.clear_cells(0, 0, self.width, self.height);
+        for row in 0..self.height {
+            for col in 0..self.width {
+                let idx = self.get_index(row, col);
+                self.cells[idx] = {
+                    if Math::random() < 0.5 {
+                        Cell::Alive
+                    } else {
+                        Cell::Dead
+                    }
+                };
+            }
         }
     }
 }
