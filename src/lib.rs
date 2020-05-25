@@ -4,7 +4,7 @@ use std::vec;
 
 use wasm_bindgen::prelude::*;
 use js_sys::Math;
-use web_sys::console
+use web_sys::console;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -27,6 +27,24 @@ macro_rules! log {
     }
 }
 
+pub struct Timer<'a> {
+    name: &'a str,
+}
+
+impl<'a> Timer<'a> {
+    pub fn new(name: &'a str) -> Timer<'a> {
+        #[cfg(not(test))]
+        console::time_with_label(name);
+        Timer { name }
+    }
+}
+
+impl<'a> Drop for Timer<'a> {
+    fn drop(&mut self) {
+        #[cfg(not(test))]
+        console::time_end_with_label(self.name);
+    }
+}
 
 #[wasm_bindgen]
 #[repr(u8)]
@@ -49,15 +67,11 @@ impl Cell {
 pub struct Population {
     height: u32,
     width: u32,
-    h_flip: bool,
-    v_flip: bool,
-    invert: bool,
     cells: Vec<(u32, u32)>,
 }
 
-#[wasm_bindgen]
 impl Population {
-    pub fn new(name: String, h_flip: bool, v_flip: bool, invert: bool) -> Population {
+    pub fn new(name: String) -> Population {
         let (cells, height, width) = match name.as_str() {
             "block" => (vec![
                 (0, 0), (0,1),
@@ -135,9 +149,6 @@ impl Population {
         Population {
             height,
             width,
-            h_flip,
-            v_flip,
-            invert,
             cells
         }
     }
@@ -187,9 +198,9 @@ impl Universe {
     }
 
     fn clear_cells(&mut self, row: u32, col: u32, h_size: u32, v_size: u32) {
-        for row in row..row + h_size {
-            for col in col..col + v_size {
-                let idx = self.get_index(row, col);
+        for row in row..row + v_size {
+            for col in col..col + h_size {
+                let idx = self.get_index(row % self.height, col % self.width);
                 self.cells[idx] = Cell::Dead;
             }
         }
@@ -213,6 +224,7 @@ impl Universe {
     }
 
     pub fn tick(&mut self) {
+        let _timer = Timer::new("Universe::tick()");
         let mut next = self.cells.clone();
 
         for row in 0..self.height {
@@ -294,27 +306,53 @@ impl Universe {
     }
 
     pub fn seed_population(&mut self, row: u32, col: u32, pop_name: String, h_flip: bool, v_flip: bool, invert: bool) {
-        let pop = Population::new(pop_name, h_flip, v_flip, invert);
+        log!(
+            "Universe::seed_population() row: {}, col: {}, name: {}, h_flip: {}, v_flip: {}, invert: {}",
+            row,
+            col,
+            pop_name,
+            h_flip,
+            v_flip,
+            invert
+        );
+        let pop = Population::new(pop_name);
+        let (height, width) = if invert {
+            (pop.width, pop.height)
+        } else {
+            (pop.height, pop.width)
+        };
+        let row = (self.height + row) - (height / 2);
+        let col = (self.width + col) - (width / 2);
+        // let (row, col) = if invert {
+        //     ((self.height + row) - (pop.width / 2), (self.width + col) - (pop.height / 2))
+        // } else {
+        //     ((self.height + row) - (pop.height / 2), (self.width + col) - (pop.width / 2))
+        // };
+        // let row = (self.height + row) - (pop.height / 2);
+        // let col = (self.width + col) - (pop.width / 2);
+        // log!("seed_population() adjusted row: {}, col: {}", row, col);
         let mut cells = Vec::new();
-        for (seed_row, seed_col) in pop.cells {
-            let (seed_row, seed_col) = if pop.invert {
-                (seed_col, seed_row)
+        for (cell_y, cell_x) in pop.cells {
+            let (cell_row, cell_col) = if invert {
+                (cell_x, cell_y)
             } else {
-                (seed_row, seed_col)
+                (cell_y, cell_x)
             };
-            let row = if pop.v_flip {
-                row + pop.height - seed_row
+            let row = if v_flip {
+                row + height - cell_row
             } else {
-                row + seed_row
+                row + cell_row
             };
-            let col = if pop.h_flip {
-                col + pop.width - seed_col
+            let col = if h_flip {
+                col + width - cell_col
             } else {
-                col + seed_col
+                col + cell_col
             };
             cells.push((row, col));
         }
-        self.clear_cells(row, col, pop.width, pop.height);
+        // let row = row + (pop.width / 2);
+        // let col = col + (pop.height / 2);
+        self.clear_cells(row, col, width, height);
         self.set_cells(cells.as_slice());
     }
 

@@ -52,6 +52,7 @@ canvas.height = (CELL_SIZE + 1) * height + 1;
 canvas.width = (CELL_SIZE + 1) * width + 1;
 
 canvas.addEventListener("click", event => {
+    debugger;
     const insertPopulation = document.getElementById("insert").value;
     const hFlip = document.getElementById("h-flip").checked;
     const vFlip = document.getElementById("v-flip").checked;
@@ -65,8 +66,8 @@ canvas.addEventListener("click", event => {
     const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
     const canvasTop = (event.clientY - boundingRect.top) * scaleY;
 
-    const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
-    const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
+    const row = (Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1) + height) % height;
+    const col = (Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1) + width) % width;
 
     if (insertPopulation === "toggle") {
         universe.toggle_cell(row, col);
@@ -85,7 +86,6 @@ let animationId = null;
 const renderLoop = () => {
     fps.render();
 
-    debugger;
     universe.tick();
 
     drawGrid();
