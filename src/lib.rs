@@ -1,6 +1,5 @@
 mod utils;
 
-use std::collections::HashMap;
 use std::vec;
 
 use wasm_bindgen::prelude::*;
