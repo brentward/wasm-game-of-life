@@ -15,9 +15,15 @@
         align-items: center;
         justify-content: center;
       }
+
+      #fps {
+        white-space: pre;
+        font-family: monospace;
+      }
     </style>
   </head>
   <body>
+<<<<<<< Updated upstream
     <button id="play-pause"></button>
     <input type="radio" name="insert" value="toggle" checked="checked"> toggle
     <input type="radio" name="insert" value="block"> block
@@ -31,6 +37,42 @@
     <input type="radio" name="insert" value="mwss"> middle weight spaceship
     <input type="radio" name="insert" value="hwss"> heavy weight spaceship
     <canvas id="game-of-life-canvas"></canvas>
+=======
+    <h2>WASM Game of Life</h2>
+    <div class="row">
+      <div class="column left">
+        <h2>Controls</h2>
+        <button id="play-pause"></button><br><br>
+        <button id="destroy-all-life"></button>
+        <button id="random-population"></button><br><br>
+        <label for="insert">Insert population:</label>
+        <select name="insert" id="insert">
+          <option value="toggle">Toggle</option>
+          <option value="block">Block</option>
+          <option value="blinker">Blinker</option>
+          <option value="toad">Toad</option>
+          <option value="beacon">Beacon</option>
+          <option value="pulsar">Pulsar</option>
+          <option value="i-column">I Column</option>
+          <option value="glider">Glider</option>
+          <option value="lwss">Light Weight Spaceship</option>
+          <option value="mwss">Middle Weight Spaceship</option>
+          <option value="hwss">Heavy Weight Spaceship</option>
+        </select><br><br>
+        <input type="checkbox" id="h-flip">
+        <label for="h-flip">horizontal flip</label><br>
+        <input type="checkbox" id="v-flip">
+        <label for="v-flip">vertical flip</label><br>
+        <input type="checkbox" id="invert">
+        <label for="invert">invert</label><br>
+      </div>
+      <div class="column right">
+        <h2>Universe</h2>
+        <div id="fps"></div>
+        <canvas id="game-of-life-canvas"></canvas>
+      </div>
+    </div>
+>>>>>>> Stashed changes
     <script src="./bootstrap.js"></script>
   </body>
 </html>
