@@ -1,19 +1,32 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1">
     <title>WASM Game of Life!</title>
     <style>
-      body {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+      * {
+        box-sizing: border-box;
+      }
+
+      /* Create two unequal columns that floats next to each other */
+      .column {
+        float: left;
+        padding: 10px;
+      }
+
+      .left {
+        width: 25%;
+      }
+
+      .right {
+        width: 75%;
+      }
+
+      /* Clear floats after the columns */
+      .row:after {
+        content: "";
+        display: table;
+        clear: both;
       }
 
       #fps {
@@ -23,21 +36,6 @@
     </style>
   </head>
   <body>
-<<<<<<< Updated upstream
-    <button id="play-pause"></button>
-    <input type="radio" name="insert" value="toggle" checked="checked"> toggle
-    <input type="radio" name="insert" value="block"> block
-    <input type="radio" name="insert" value="blinker"> blinker
-    <input type="radio" name="insert" value="toad"> toad
-    <input type="radio" name="insert" value="beacon"> beacon
-    <input type="radio" name="insert" value="pulsar"> pulsar
-    <input type="radio" name="insert" value="i-column"> I column
-    <input type="radio" name="insert" value="glider"> glider
-    <input type="radio" name="insert" value="lwss"> light weight spaceship
-    <input type="radio" name="insert" value="mwss"> middle weight spaceship
-    <input type="radio" name="insert" value="hwss"> heavy weight spaceship
-    <canvas id="game-of-life-canvas"></canvas>
-=======
     <h2>WASM Game of Life</h2>
     <div class="row">
       <div class="column left">
@@ -72,7 +70,6 @@
         <canvas id="game-of-life-canvas"></canvas>
       </div>
     </div>
->>>>>>> Stashed changes
     <script src="./bootstrap.js"></script>
   </body>
 </html>
