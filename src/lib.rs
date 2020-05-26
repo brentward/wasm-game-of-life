@@ -159,17 +159,18 @@ pub struct Universe {
     width: u32,
     height: u32,
     cells: [Vec<Cell>; 2],
-    lifetime: u8,
+    cells_idx: usize,
+    next_cells_idx: usize,
 }
 
 impl Universe {
-    fn get_cells_index(&self) -> usize {
-        self.lifetime as usize & 1
-    }
-
-    fn get_next_cells_index(&self) -> usize {
-        (1 + self.lifetime as usize) & 1
-    }
+    // fn get_cells_index(&self) -> usize {
+    //     self.lifetime as usize & 1
+    // }
+    //
+    // fn get_next_cells_index(&self) -> usize {
+    //     (1 + self.lifetime as usize) & 1
+    // }
 
     fn get_index(&self, row: u32, col: u32) -> usize {
         (row * self.width + col) as usize
@@ -201,57 +202,53 @@ impl Universe {
         } else {
             col + 1
         };
-        let cells_idx = self.get_cells_index();
 
         let nw = self.get_index(north, west);
-        count += self.cells[cells_idx][nw] as u8;
+        count += self.cells[self.cells_idx][nw] as u8;
 
         let n = self.get_index(north, col);
-        count += self.cells[cells_idx][n] as u8;
+        count += self.cells[self.cells_idx][n] as u8;
 
         let ne = self.get_index(north, east);
-        count += self.cells[cells_idx][ne] as u8;
+        count += self.cells[self.cells_idx][ne] as u8;
 
         let w = self.get_index(row, west);
-        count += self.cells[cells_idx][w] as u8;
+        count += self.cells[self.cells_idx][w] as u8;
 
         let e = self.get_index(row, east);
-        count += self.cells[cells_idx][e] as u8;
+        count += self.cells[self.cells_idx][e] as u8;
 
         let sw = self.get_index(south, west);
-        count += self.cells[cells_idx][sw] as u8;
+        count += self.cells[self.cells_idx][sw] as u8;
 
         let s = self.get_index(south, col);
-        count += self.cells[cells_idx][s] as u8;
+        count += self.cells[self.cells_idx][s] as u8;
 
         let se = self.get_index(south, east);
-        count += self.cells[cells_idx][se] as u8;
+        count += self.cells[self.cells_idx][se] as u8;
 
         count
     }
 
     /// Get the dead and alive values of the entire universe.
     pub fn get_cells(&self) -> &[Cell] {
-        let cells_idx = self.get_cells_index();
-        &self.cells[cells_idx]
+        &self.cells[self.cells_idx]
     }
 
     /// Set cells to be alive in a universe by passing the row and column
     /// of each cell as an array.
     pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
         for (row, col) in cells.iter().cloned() {
-            let cells_idx = self.get_cells_index();
             let idx = self.get_index(row % self.height, col % self.width);
-            self.cells[cells_idx][idx] = Cell::Alive;
+            self.cells[self.cells_idx][idx] = Cell::Alive;
         }
     }
 
     fn clear_cells(&mut self, row: u32, col: u32, h_size: u32, v_size: u32) {
         for row in row..row + v_size {
             for col in col..col + h_size {
-                let cells_idx = self.get_cells_index();
                 let idx = self.get_index(row % self.height, col % self.width);
-                self.cells[cells_idx][idx] = Cell::Dead;
+                self.cells[self.cells_idx][idx] = Cell::Dead;
             }
         }
     }
@@ -272,7 +269,8 @@ impl Universe {
             width,
             height,
             cells,
-            lifetime: 0,
+            cells_idx: 0,
+            next_cells_idx: 1,
         }
     }
 
@@ -283,13 +281,10 @@ impl Universe {
         //     self.cells.clone()
         // };
 
-        let cells_idx = self.get_cells_index();
-        let next_idx = self.get_next_cells_index();
-
         for row in 0..self.height {
             for col in 0..self.width {
                 let idx = self.get_index(row, col);
-                let cell = self.cells[cells_idx][idx];
+                let cell = self.cells[self.cells_idx][idx];
                 let live_neighbors = self.live_neighbor_count(row, col);
                 //
                 // log!(
@@ -325,14 +320,15 @@ impl Universe {
                     // All other cells remain in the same state.
                     (otherwise, _) => otherwise,
                 };
-                self.cells[next_idx][idx] = next_cell
+                self.cells[self.next_cells_idx][idx] = next_cell
 
                 // next[idx] = next_cell;
             }
         }
 
         // self.cells = next;
-        self.lifetime = self.lifetime.wrapping_add(1);
+        self.cells_idx = (self.cells_idx + 1) & 1;
+        self.next_cells_idx = (self.next_cells_idx + 1) & 1;
     }
 
     pub fn render(&self) -> String {
@@ -348,8 +344,7 @@ impl Universe {
     }
 
     pub fn cells(&self) -> *const Cell {
-        let cells_idx = self.get_cells_index();
-        self.cells[cells_idx].as_ptr()
+        self.cells[self.cells_idx].as_ptr()
     }
 
     pub fn set_width(&mut self, width: u32) {
@@ -365,9 +360,8 @@ impl Universe {
     }
 
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
-        let cells_idx = self.get_cells_index();
         let idx = self.get_index(row, col);
-        self.cells[cells_idx][idx].toggle();
+        self.cells[self.cells_idx][idx].toggle();
     }
 
     pub fn seed_population(&mut self, row: u32, col: u32, pop_name: String, h_flip: bool, v_flip: bool, invert: bool) {
@@ -420,9 +414,8 @@ impl Universe {
         self.clear_cells(0, 0, self.width, self.height);
         for row in 0..self.height {
             for col in 0..self.width {
-                let cells_idx = self.get_cells_index();
                 let idx = self.get_index(row, col);
-                self.cells[cells_idx][idx] = {
+                self.cells[self.cells_idx][idx] = {
                     if Math::random() < 0.5 {
                         Cell::Alive
                     } else {
@@ -438,8 +431,7 @@ use std::fmt;
 
 impl fmt::Display for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let cells_idx = self.get_cells_index();
-        for line in (self.cells[cells_idx]).as_slice().chunks(self.width as usize) {
+        for line in (self.cells[self.cells_idx]).as_slice().chunks(self.width as usize) {
             for &cell in line {
                 let symbol = if cell == Cell::Dead { '◻' } else { '◼' };
                 write!(f, "{}", symbol)?;
