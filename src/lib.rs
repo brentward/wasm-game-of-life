@@ -164,14 +164,6 @@ pub struct Universe {
 }
 
 impl Universe {
-    // fn get_cells_index(&self) -> usize {
-    //     self.lifetime as usize & 1
-    // }
-    //
-    // fn get_next_cells_index(&self) -> usize {
-    //     (1 + self.lifetime as usize) & 1
-    // }
-
     fn get_index(&self, row: u32, col: u32) -> usize {
         (row * self.width + col) as usize
     }
@@ -276,10 +268,6 @@ impl Universe {
 
     pub fn tick(&mut self) {
         let _timer = Timer::new("Universe::tick()");
-        // let mut next = {
-        //     let _timer = Timer::new("allocate next cells");
-        //     self.cells.clone()
-        // };
 
         for row in 0..self.height {
             for col in 0..self.width {
@@ -321,12 +309,9 @@ impl Universe {
                     (otherwise, _) => otherwise,
                 };
                 self.cells[self.next_cells_idx][idx] = next_cell
-
-                // next[idx] = next_cell;
             }
         }
 
-        // self.cells = next;
         self.cells_idx = (self.cells_idx + 1) & 1;
         self.next_cells_idx = (self.next_cells_idx + 1) & 1;
     }
