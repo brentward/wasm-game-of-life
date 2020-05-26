@@ -158,7 +158,9 @@ impl Population {
 pub struct Universe {
     width: u32,
     height: u32,
-    cells: Vec<Cell>,
+    cells: [Vec<Cell>; 2],
+    cells_idx: usize,
+    next_cells_idx: usize,
 }
 
 impl Universe {
@@ -194,35 +196,35 @@ impl Universe {
         };
 
         let nw = self.get_index(north, west);
-        count += self.cells[nw] as u8;
+        count += self.cells[self.cells_idx][nw] as u8;
 
         let n = self.get_index(north, col);
-        count += self.cells[n] as u8;
+        count += self.cells[self.cells_idx][n] as u8;
 
         let ne = self.get_index(north, east);
-        count += self.cells[ne] as u8;
+        count += self.cells[self.cells_idx][ne] as u8;
 
         let w = self.get_index(row, west);
-        count += self.cells[w] as u8;
+        count += self.cells[self.cells_idx][w] as u8;
 
         let e = self.get_index(row, east);
-        count += self.cells[e] as u8;
+        count += self.cells[self.cells_idx][e] as u8;
 
         let sw = self.get_index(south, west);
-        count += self.cells[sw] as u8;
+        count += self.cells[self.cells_idx][sw] as u8;
 
         let s = self.get_index(south, col);
-        count += self.cells[s] as u8;
+        count += self.cells[self.cells_idx][s] as u8;
 
         let se = self.get_index(south, east);
-        count += self.cells[se] as u8;
+        count += self.cells[self.cells_idx][se] as u8;
 
         count
     }
 
     /// Get the dead and alive values of the entire universe.
     pub fn get_cells(&self) -> &[Cell] {
-        &self.cells
+        &self.cells[self.cells_idx]
     }
 
     /// Set cells to be alive in a universe by passing the row and column
@@ -230,7 +232,7 @@ impl Universe {
     pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
         for (row, col) in cells.iter().cloned() {
             let idx = self.get_index(row % self.height, col % self.width);
-            self.cells[idx] = Cell::Alive;
+            self.cells[self.cells_idx][idx] = Cell::Alive;
         }
     }
 
@@ -238,7 +240,7 @@ impl Universe {
         for row in row..row + v_size {
             for col in col..col + h_size {
                 let idx = self.get_index(row % self.height, col % self.width);
-                self.cells[idx] = Cell::Dead;
+                self.cells[self.cells_idx][idx] = Cell::Dead;
             }
         }
     }
@@ -249,72 +251,69 @@ impl Universe {
 impl Universe {
     pub fn new() -> Universe {
         utils::set_panic_hook();
-        let width = 96;
-        let height = 96;
-        let cells = (0..width * height).map(|_i| Cell::Dead).collect();
+        let width = 128;
+        let height = 128;
+        let cells_0: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
+        let cells_1: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
+        let cells = [cells_0, cells_1];
 
         Universe {
             width,
             height,
             cells,
+            cells_idx: 0,
+            next_cells_idx: 1,
         }
     }
 
     pub fn tick(&mut self) {
         let _timer = Timer::new("Universe::tick()");
-        let mut next = {
-            let _timer = Timer::new("allocate next cells");
-            self.cells.clone()
-        };
-        {
-            let _timer = Timer::new("new generation");
-            for row in 0..self.height {
-                for col in 0..self.width {
-                    let idx = self.get_index(row, col);
-                    let cell = self.cells[idx];
-                    let live_neighbors = self.live_neighbor_count(row, col);
-                    //
-                    // log!(
-                    //     "cel[{}, {}] is initially {:?} and has {} life neighbors",
-                    //     row,
-                    //     col,
-                    //     cell,
-                    //     live_neighbors
-                    // );
 
-                    let next_cell = match (cell, live_neighbors) {
-                        // Rule 1: Any live cell with fewer than two live neighbours
-                        // dies, as if caused by underpopulation.
-                        (Cell::Alive, x) if x < 2 => {
-                            // log!("cel[{}, {}] died of loneliness", row, col);
-                            Cell::Dead
-                        },
-                        // Rule 2: Any live cell with two or three live neighbours
-                        // lives on to the next generation.
-                        (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                        // Rule 3: Any live cell with more than three live
-                        // neighbours dies, as if by overpopulation.
-                        (Cell::Alive, x) if x > 3 => {
-                            // log!("cel[{}, {}] died of agoraphobia", row, col);
-                            Cell::Dead
-                        },
-                        // Rule 4: Any dead cell with exactly three live neighbours
-                        // becomes a live cell, as if by reproduction.
-                        (Cell::Dead, 3) => {
-                            // log!("cel[{}, {}] was born", row, col);
-                            Cell::Alive
-                        },
-                        // All other cells remain in the same state.
-                        (otherwise, _) => otherwise,
-                    };
+        for row in 0..self.height {
+            for col in 0..self.width {
+                let idx = self.get_index(row, col);
+                let cell = self.cells[self.cells_idx][idx];
+                let live_neighbors = self.live_neighbor_count(row, col);
+                //
+                // log!(
+                //     "cel[{}, {}] is initially {:?} and has {} life neighbors",
+                //     row,
+                //     col,
+                //     cell,
+                //     live_neighbors
+                // );
 
-                    next[idx] = next_cell;
-                }
+                let next_cell = match (cell, live_neighbors) {
+                    // Rule 1: Any live cell with fewer than two live neighbours
+                    // dies, as if caused by underpopulation.
+                    (Cell::Alive, x) if x < 2 => {
+                        // log!("cel[{}, {}] died of loneliness", row, col);
+                        Cell::Dead
+                    },
+                    // Rule 2: Any live cell with two or three live neighbours
+                    // lives on to the next generation.
+                    (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
+                    // Rule 3: Any live cell with more than three live
+                    // neighbours dies, as if by overpopulation.
+                    (Cell::Alive, x) if x > 3 => {
+                        // log!("cel[{}, {}] died of agoraphobia", row, col);
+                        Cell::Dead
+                    },
+                    // Rule 4: Any dead cell with exactly three live neighbours
+                    // becomes a live cell, as if by reproduction.
+                    (Cell::Dead, 3) => {
+                        // log!("cel[{}, {}] was born", row, col);
+                        Cell::Alive
+                    },
+                    // All other cells remain in the same state.
+                    (otherwise, _) => otherwise,
+                };
+                self.cells[self.next_cells_idx][idx] = next_cell
             }
         }
-        let _timer = Timer::new("free old cells");
 
-        self.cells = next;
+        self.cells_idx = (self.cells_idx + 1) & 1;
+        self.next_cells_idx = (self.next_cells_idx + 1) & 1;
     }
 
     pub fn render(&self) -> String {
@@ -330,22 +329,24 @@ impl Universe {
     }
 
     pub fn cells(&self) -> *const Cell {
-        self.cells.as_ptr()
+        self.cells[self.cells_idx].as_ptr()
     }
 
     pub fn set_width(&mut self, width: u32) {
         self.width = width;
-        self.cells = (0..width * self.height).map(|_i| Cell::Dead).collect();
+        self.cells[0] = (0..width * self.height).map(|_i| Cell::Dead).collect();
+        self.cells[1] = (0..width * self.height).map(|_i| Cell::Dead).collect();
     }
 
     pub fn set_height(&mut self, height: u32) {
         self.height = height;
-        self.cells = (0..self.width * height).map(|_i| Cell::Dead).collect();
+        self.cells[0] = (0..self.width * height).map(|_i| Cell::Dead).collect();
+        self.cells[1] = (0..self.width * height).map(|_i| Cell::Dead).collect();
     }
 
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
         let idx = self.get_index(row, col);
-        self.cells[idx].toggle();
+        self.cells[self.cells_idx][idx].toggle();
     }
 
     pub fn seed_population(&mut self, row: u32, col: u32, pop_name: String, h_flip: bool, v_flip: bool, invert: bool) {
@@ -399,7 +400,7 @@ impl Universe {
         for row in 0..self.height {
             for col in 0..self.width {
                 let idx = self.get_index(row, col);
-                self.cells[idx] = {
+                self.cells[self.cells_idx][idx] = {
                     if Math::random() < 0.5 {
                         Cell::Alive
                     } else {
@@ -415,7 +416,7 @@ use std::fmt;
 
 impl fmt::Display for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for line in self.cells.as_slice().chunks(self.width as usize) {
+        for line in (self.cells[self.cells_idx]).as_slice().chunks(self.width as usize) {
             for &cell in line {
                 let symbol = if cell == Cell::Dead { '◻' } else { '◼' };
                 write!(f, "{}", symbol)?;
