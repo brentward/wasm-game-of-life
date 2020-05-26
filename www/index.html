@@ -36,10 +36,11 @@
     </style>
   </head>
   <body>
-    <h2>WASM Game of Life</h2>
     <div class="row">
       <div class="column left">
+        <h2>WASM Game of Life</h2>
         <h2>Controls</h2>
+        <div id="fps"></div><br>
         <button id="play-pause"></button><br><br>
         <button id="destroy-all-life"></button>
         <button id="random-population"></button><br><br>
@@ -66,7 +67,6 @@
       </div>
       <div class="column right">
         <h2>Universe</h2>
-        <div id="fps"></div>
         <canvas id="game-of-life-canvas"></canvas>
       </div>
     </div>
