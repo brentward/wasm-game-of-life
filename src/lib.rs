@@ -42,7 +42,7 @@ impl<'a> Timer<'a> {
 impl<'a> Drop for Timer<'a> {
     fn drop(&mut self) {
         #[cfg(not(test))]
-            console::time_end_with_label(self.name);
+        console::time_end_with_label(self.name);
     }
 }
 
