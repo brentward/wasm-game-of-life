@@ -249,8 +249,8 @@ impl Universe {
 impl Universe {
     pub fn new() -> Universe {
         utils::set_panic_hook();
-        let width = 128;
-        let height = 128;
+        let width = 96;
+        let height = 96;
         let cells = (0..width * height).map(|_i| Cell::Dead).collect();
 
         Universe {
