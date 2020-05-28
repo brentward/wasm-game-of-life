@@ -253,10 +253,11 @@ impl Universe {
 impl Universe {
     pub fn new() -> Universe {
         utils::set_panic_hook();
-        let width = 64;
-        let height = 64;
-        let size = 9;
+        let width = 192;
+        let height = 128;
+        let size = 5;
 
+        #[cfg(not(test))]
         render::start((size as u32 + 1) * width + 1, (size as u32 + 1) * height + 1)
             .expect("Universe::new() calling render::start() failed");
 
@@ -509,12 +510,12 @@ mod tests {
         expected_universe.set_cells(&[(2,1), (2,3), (3,2), (3,3), (4,2)]);
 
         println!("input universe before tick:");
-        println!("{}", input_universe.render());
+        println!("{}", input_universe.render_to_string());
         input_universe.tick();
         println!("\ninput universe:");
-        println!("{}", input_universe.render());
+        println!("{}", input_universe.render_to_string());
         println!("\nexpected universe:");
-        println!("{}", expected_universe.render());
+        println!("{}", expected_universe.render_to_string());
         assert_eq!(&input_universe.get_cells(), &expected_universe.get_cells());
     }
 }
