@@ -44,8 +44,8 @@ function main() {
 
         // for (let i = 0; i < 9; i++) {
         universe.tick();
-        universe.render();
         // }
+        universe.render();
 
         animationId = requestAnimationFrame(renderLoop);
     };

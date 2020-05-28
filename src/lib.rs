@@ -5,7 +5,7 @@ use std::vec;
 
 use wasm_bindgen::prelude::*;
 use js_sys::Math;
-use web_sys::console;
+use web_sys::{console, WebGlProgram};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -163,6 +163,8 @@ pub struct Universe {
     cells: [Vec<Cell>; 2],
     cells_idx: usize,
     next_cells_idx: usize,
+    cell_program: Option<WebGlProgram>,
+    grid_program: Option<WebGlProgram>,
 }
 
 impl Universe {
@@ -257,16 +259,21 @@ impl Universe {
         let height = 128;
         let size = 5;
 
-        #[cfg(not(test))]
-        render::start((size as u32 + 1) * width + 1, (size as u32 + 1) * height + 1)
-            .expect("Universe::new() calling render::start() failed");
+        let (cell_program, grid_program) = if !cfg!(test) {
+            match render::start((size as u32 + 1) * width + 1, (size as u32 + 1) * height + 1) {
+                Ok(program_option_tup) => program_option_tup,
+                Err(_) => (None, None),
+            }
+        } else {
+            (None, None)
+        };
+
 
         // render::set_canvas_size(((size as u32 + 1) * height + 1) * 4, ((size as u32 + 1) * width + 1) * 2)
         //     .expect("Universe::new() calling render::set_canvas_size() failed");
         let cells_0: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells_1: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells = [cells_0, cells_1];
-
         Universe {
             width,
             height,
@@ -274,6 +281,8 @@ impl Universe {
             size,
             cells_idx: 0,
             next_cells_idx: 1,
+            cell_program,
+            grid_program,
         }
     }
 
@@ -329,11 +338,12 @@ impl Universe {
 
     pub fn render(&self) {
         let mut vertices: Vec<f32> = vec![];
+        let mut grid_vertices: Vec<f32> = vec![];
         let x_pixels = (self.size as u32 + 1) * self.width + 1;
         let y_pixels = (self.size as u32 + 1) * self.height + 1;
-        let z = 0.0f32;
-        let x_start = -1.0f32;
-        let y_start = -1.0f32;
+        // let z = 0.0;
+        let x_start = -1.0;
+        let y_start = -1.0;
         let x_grid = 2.0 / x_pixels as f32;
         let x_size = x_grid * self.size as f32;
         let y_grid =  2.0 / y_pixels as f32;
@@ -342,34 +352,73 @@ impl Universe {
             for y in 0..self.height {
                 let idx = self.get_index(y, x);
                 if self.cells[self.cells_idx][idx] == Cell::Alive {
-                    let fx0 = x_start + (x as f32 * (x_grid + x_size)) +  x_grid;
-                    let fy0 = y_start + (y as f32 * (y_grid + y_size)) +  y_grid;
-                    let fx1 = fx0 + x_size;
-                    let fy1 = fy0 + y_size;
-                    vertices.push(fx0);
-                    vertices.push(fy0);
-                    vertices.push(0f32);
-                    vertices.push(fx1);
-                    vertices.push(fy0);
-                    vertices.push(0f32);
-                    vertices.push(fx0);
-                    vertices.push(fy1);
-                    vertices.push(0f32);
-                    vertices.push(fx1);
-                    vertices.push(fy1);
-                    vertices.push(0f32);
-                    vertices.push(fx0);
-                    vertices.push(fy1);
-                    vertices.push(0f32);
-                    vertices.push(fx1);
-                    vertices.push(fy0);
-                    vertices.push(0f32);
-
-
+                    let cell_x0 = x_start + (x as f32 * (x_grid + x_size)) +  x_grid;
+                    let cell_y0 = y_start + (y as f32 * (y_grid + y_size)) +  y_grid;
+                    let cell_x1 = cell_x0 + x_size;
+                    let cell_y1 = cell_y0 + y_size;
+                    vertices.push(cell_x0);
+                    vertices.push(cell_y0);
+                    vertices.push(0.0);
+                    vertices.push(cell_x1);
+                    vertices.push(cell_y0);
+                    vertices.push(0.0);
+                    vertices.push(cell_x0);
+                    vertices.push(cell_y1);
+                    vertices.push(0.0);
+                    vertices.push(cell_x1);
+                    vertices.push(cell_y1);
+                    vertices.push(0.0);
+                    vertices.push(cell_x0);
+                    vertices.push(cell_y1);
+                    vertices.push(0.0);
+                    vertices.push(cell_x1);
+                    vertices.push(cell_y0);
+                    vertices.push(0.0);
+                    
+                }
+                if x == 0 {
+                    let line_y = y_start + (y as f32 * (y_grid + y_size)) + (y_grid / 2.0);
+                    grid_vertices.push(-1.0);
+                    grid_vertices.push(line_y);
+                    grid_vertices.push(0.0);
+                    grid_vertices.push(1.0);
+                    grid_vertices.push(line_y);
+                    grid_vertices.push(0.0);
                 }
             }
+            let line_x = x_start + (x as f32 * (x_grid + x_size)) + (x_grid / 2.0);
+            grid_vertices.push(line_x);
+            grid_vertices.push(-1.0);
+            grid_vertices.push(0.0);
+            grid_vertices.push(line_x);
+            grid_vertices.push(1.0);
+            grid_vertices.push(0.0);
+
         }
-        render::render(vertices).expect("error rendering");
+        grid_vertices.push(-1.0 - (x_grid / 2.0));
+        grid_vertices.push(1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+        grid_vertices.push(1.0 - (x_grid / 2.0));
+        grid_vertices.push(1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+        grid_vertices.push(1.0 - (x_grid / 2.0));
+        grid_vertices.push(-1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+        grid_vertices.push(1.0 - (x_grid / 2.0));
+        grid_vertices.push(1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+
+        let cell_program = match &self.cell_program {
+            Some(program) => program,
+            None => return (),
+        };
+
+        let grid_program = match &self.grid_program {
+            Some(program) => program,
+            None => return (),
+        };
+
+        render::render(cell_program, vertices, grid_program, grid_vertices).expect("error rendering");
     }
 
     pub fn render_to_string(&self) -> String {

@@ -3,9 +3,12 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
 
-pub fn start(width: u32, height: u32) -> Result<(), JsValue> {
+pub fn start(width: u32, height: u32) -> Result<(Option<WebGlProgram>, Option<WebGlProgram>), JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id("game-of-life-canvas").unwrap();
+    let canvas = match document.get_element_by_id("game-of-life-canvas") {
+        Some(element) => element,
+        None => return Err(JsValue::null()),
+    };
     let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
     canvas.set_width(width);
     canvas.set_height(height);
@@ -26,7 +29,7 @@ pub fn start(width: u32, height: u32) -> Result<(), JsValue> {
         }
     "#,
     )?;
-    let frag_shader = compile_shader(
+    let cell_frag_shader = compile_shader(
         &context,
         WebGlRenderingContext::FRAGMENT_SHADER,
         r#"
@@ -35,15 +38,31 @@ pub fn start(width: u32, height: u32) -> Result<(), JsValue> {
         }
     "#,
     )?;
-    let program = link_program(&context, &vert_shader, &frag_shader)?;
-    context.use_program(Some(&program));
 
-    return Ok(());
+    let grid_frag_shader = compile_shader(
+        &context,
+        WebGlRenderingContext::FRAGMENT_SHADER,
+        r#"
+        void main() {
+            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0);
+        }
+    "#,
+    )?;
 
+    let cell_program = link_program(&context, &vert_shader, &cell_frag_shader)?;
+    let grid_program = link_program(&context, &vert_shader, &grid_frag_shader)?;
+
+    return Ok((Some(cell_program), Some(grid_program)));
 }
 
-pub fn render(vertices: Vec<f32>) -> Result<(), JsValue> {
+pub fn render(
+    cell_program: &WebGlProgram,
+    vertices: Vec<f32>,
+    grid_program: &WebGlProgram,
+    grid_vertices: Vec<f32>
+) -> Result<(), JsValue> {
     let context = get_context()?;
+    context.use_program(Some(cell_program));
     let buffer = context.create_buffer().ok_or("failed to create buffer")?;
     context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
 
@@ -64,11 +83,10 @@ pub fn render(vertices: Vec<f32>) -> Result<(), JsValue> {
             WebGlRenderingContext::STATIC_DRAW,
         );
     }
-
     context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
     context.enable_vertex_attrib_array(0);
 
-    context.clear_color(0.9, 0.9, 0.9, 1.0);
+    context.clear_color(0.95, 0.95, 0.95, 1.0);
     context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
     context.draw_arrays(
@@ -76,8 +94,43 @@ pub fn render(vertices: Vec<f32>) -> Result<(), JsValue> {
         0,
         (vertices.len() / 3) as i32,
     );
+
+    context.use_program(Some(grid_program));
+    let buffer = context.create_buffer().ok_or("failed to create buffer")?;
+    context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
+
+    // Note that `Float32Array::view` is somewhat dangerous (hence the
+    // `unsafe`!). This is creating a raw view into our module's
+    // `WebAssembly.Memory` buffer, but if we allocate more pages for ourself
+    // (aka do a memory allocation in Rust) it'll cause the buffer to change,
+    // causing the `Float32Array` to be invalid.
+    //
+    // As a result, after `Float32Array::view` we have to be very careful not to
+    // do any memory allocations before it's dropped.
+    unsafe {
+        let vert_array = js_sys::Float32Array::view(&grid_vertices);
+
+        context.buffer_data_with_array_buffer_view(
+            WebGlRenderingContext::ARRAY_BUFFER,
+            &vert_array,
+            WebGlRenderingContext::STATIC_DRAW,
+        );
+    }
+
+    context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
+    context.enable_vertex_attrib_array(0);
+
+    context.draw_arrays(
+        WebGlRenderingContext::LINES,
+        0,
+        (grid_vertices.len() / 3) as i32,
+    );
+
+
     Ok(())
 }
+
+
 //
 // pub fn set_canvas_size(height: u32, width: u32) -> Result<(), JsValue> {
 //     let document = web_sys::window().unwrap().document().unwrap();
