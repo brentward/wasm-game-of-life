@@ -23,15 +23,15 @@ function main() {
         const scaleY = canvas.height / boundingRect.height;
 
         const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
-        const canvasTop = (event.clientY - boundingRect.top) * scaleY;
+        const canvasBottom = (boundingRect.bottom - event.clientY) * scaleY;
 
-        const row = (Math.min(Math.floor(canvasTop / (cellSize + 1)), height - 1) + height) % height;
+        const row = (Math.min(Math.floor(canvasBottom / (cellSize + 1)), height - 1)) % height;
         const col = (Math.min(Math.floor(canvasLeft / (cellSize + 1)), width - 1) + width) % width;
 
         if (insertPopulation === "toggle") {
             universe.toggle_cell(row, col);
         } else {
-            universe.seed_population(height - row, col, insertPopulation, hFlip, vFlip, invert);
+            universe.seed_population(row, col, insertPopulation, hFlip, vFlip, invert);
         }
 
         universe.render()
