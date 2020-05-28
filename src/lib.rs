@@ -1,4 +1,5 @@
 mod utils;
+mod render;
 
 use std::vec;
 
@@ -158,6 +159,7 @@ impl Population {
 pub struct Universe {
     width: u32,
     height: u32,
+    size: u8,
     cells: [Vec<Cell>; 2],
     cells_idx: usize,
     next_cells_idx: usize,
@@ -251,8 +253,15 @@ impl Universe {
 impl Universe {
     pub fn new() -> Universe {
         utils::set_panic_hook();
-        let width = 128;
-        let height = 128;
+        let width = 64;
+        let height = 64;
+        let size = 9;
+
+        render::start((size as u32 + 1) * width + 1, (size as u32 + 1) * height + 1)
+            .expect("Universe::new() calling render::start() failed");
+
+        // render::set_canvas_size(((size as u32 + 1) * height + 1) * 4, ((size as u32 + 1) * width + 1) * 2)
+        //     .expect("Universe::new() calling render::set_canvas_size() failed");
         let cells_0: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells_1: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells = [cells_0, cells_1];
@@ -261,6 +270,7 @@ impl Universe {
             width,
             height,
             cells,
+            size,
             cells_idx: 0,
             next_cells_idx: 1,
         }
@@ -316,7 +326,52 @@ impl Universe {
         self.next_cells_idx = (self.next_cells_idx + 1) & 1;
     }
 
-    pub fn render(&self) -> String {
+    pub fn render(&self) {
+        let mut vertices: Vec<f32> = vec![];
+        let x_pixels = (self.size as u32 + 1) * self.width + 1;
+        let y_pixels = (self.size as u32 + 1) * self.height + 1;
+        let z = 0.0f32;
+        let x_start = -1.0f32;
+        let y_start = -1.0f32;
+        let x_grid = 2.0 / x_pixels as f32;
+        let x_size = x_grid * self.size as f32;
+        let y_grid =  2.0 / y_pixels as f32;
+        let y_size = y_grid * self.size as f32;
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let idx = self.get_index(y, x);
+                if self.cells[self.cells_idx][idx] == Cell::Alive {
+                    let fx0 = x_start + (x as f32 * (x_grid + x_size)) +  x_grid;
+                    let fy0 = y_start + (y as f32 * (y_grid + y_size)) +  y_grid;
+                    let fx1 = fx0 + x_size;
+                    let fy1 = fy0 + y_size;
+                    vertices.push(fx0);
+                    vertices.push(fy0);
+                    vertices.push(0f32);
+                    vertices.push(fx1);
+                    vertices.push(fy0);
+                    vertices.push(0f32);
+                    vertices.push(fx0);
+                    vertices.push(fy1);
+                    vertices.push(0f32);
+                    vertices.push(fx1);
+                    vertices.push(fy1);
+                    vertices.push(0f32);
+                    vertices.push(fx0);
+                    vertices.push(fy1);
+                    vertices.push(0f32);
+                    vertices.push(fx1);
+                    vertices.push(fy0);
+                    vertices.push(0f32);
+
+
+                }
+            }
+        }
+        render::render(vertices).expect("error rendering");
+    }
+
+    pub fn render_to_string(&self) -> String {
         self.to_string()
     }
 
@@ -326,6 +381,10 @@ impl Universe {
 
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    pub fn size(&self) -> u8 {
+        self.size
     }
 
     pub fn cells(&self) -> *const Cell {
@@ -342,6 +401,10 @@ impl Universe {
         self.height = height;
         self.cells[0] = (0..self.width * height).map(|_i| Cell::Dead).collect();
         self.cells[1] = (0..self.width * height).map(|_i| Cell::Dead).collect();
+    }
+
+    pub fn set_size(&mut self, size: u32) {
+        self.size = size as u8;
     }
 
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
