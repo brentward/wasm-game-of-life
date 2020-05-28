@@ -1,10 +1,11 @@
 mod utils;
+mod render;
 
 use std::vec;
 
 use wasm_bindgen::prelude::*;
 use js_sys::Math;
-use web_sys::console;
+use web_sys::{console, WebGlProgram};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -158,9 +159,12 @@ impl Population {
 pub struct Universe {
     width: u32,
     height: u32,
+    size: u8,
     cells: [Vec<Cell>; 2],
     cells_idx: usize,
     next_cells_idx: usize,
+    cell_program: Option<WebGlProgram>,
+    grid_program: Option<WebGlProgram>,
 }
 
 impl Universe {
@@ -251,18 +255,31 @@ impl Universe {
 impl Universe {
     pub fn new() -> Universe {
         utils::set_panic_hook();
-        let width = 128;
+        let width = 192;
         let height = 128;
+        let size = 5;
+
+        let (cell_program, grid_program) = if !cfg!(test) {
+            match render::start((size as u32 + 1) * width + 1, (size as u32 + 1) * height + 1) {
+                Ok(program_option_tup) => program_option_tup,
+                Err(_) => (None, None),
+            }
+        } else {
+            (None, None)
+        };
+
         let cells_0: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells_1: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells = [cells_0, cells_1];
-
         Universe {
             width,
             height,
             cells,
+            size,
             cells_idx: 0,
             next_cells_idx: 1,
+            cell_program,
+            grid_program,
         }
     }
 
@@ -316,7 +333,91 @@ impl Universe {
         self.next_cells_idx = (self.next_cells_idx + 1) & 1;
     }
 
-    pub fn render(&self) -> String {
+    pub fn render(&self) {
+        let mut vertices: Vec<f32> = vec![];
+        let mut grid_vertices: Vec<f32> = vec![];
+        let x_pixels = (self.size as u32 + 1) * self.width + 1;
+        let y_pixels = (self.size as u32 + 1) * self.height + 1;
+        let x_start = -1.0;
+        let y_start = -1.0;
+        let x_grid = 2.0 / x_pixels as f32;
+        let x_size = x_grid * self.size as f32;
+        let y_grid =  2.0 / y_pixels as f32;
+        let y_size = y_grid * self.size as f32;
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let idx = self.get_index(y, x);
+                if self.cells[self.cells_idx][idx] == Cell::Alive {
+                    let cell_x0 = x_start + (x as f32 * (x_grid + x_size)) +  x_grid;
+                    let cell_y0 = y_start + (y as f32 * (y_grid + y_size)) +  y_grid;
+                    let cell_x1 = cell_x0 + x_size;
+                    let cell_y1 = cell_y0 + y_size;
+                    vertices.push(cell_x0);
+                    vertices.push(cell_y0);
+                    vertices.push(0.0);
+                    vertices.push(cell_x1);
+                    vertices.push(cell_y0);
+                    vertices.push(0.0);
+                    vertices.push(cell_x0);
+                    vertices.push(cell_y1);
+                    vertices.push(0.0);
+                    vertices.push(cell_x1);
+                    vertices.push(cell_y1);
+                    vertices.push(0.0);
+                    vertices.push(cell_x0);
+                    vertices.push(cell_y1);
+                    vertices.push(0.0);
+                    vertices.push(cell_x1);
+                    vertices.push(cell_y0);
+                    vertices.push(0.0);
+                    
+                }
+                if x == 0 {
+                    let line_y = y_start + (y as f32 * (y_grid + y_size)) + (y_grid / 2.0);
+                    grid_vertices.push(-1.0);
+                    grid_vertices.push(line_y);
+                    grid_vertices.push(0.0);
+                    grid_vertices.push(1.0);
+                    grid_vertices.push(line_y);
+                    grid_vertices.push(0.0);
+                }
+            }
+            let line_x = x_start + (x as f32 * (x_grid + x_size)) + (x_grid / 2.0);
+            grid_vertices.push(line_x);
+            grid_vertices.push(-1.0);
+            grid_vertices.push(0.0);
+            grid_vertices.push(line_x);
+            grid_vertices.push(1.0);
+            grid_vertices.push(0.0);
+
+        }
+        grid_vertices.push(-1.0 - (x_grid / 2.0));
+        grid_vertices.push(1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+        grid_vertices.push(1.0 - (x_grid / 2.0));
+        grid_vertices.push(1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+        grid_vertices.push(1.0 - (x_grid / 2.0));
+        grid_vertices.push(-1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+        grid_vertices.push(1.0 - (x_grid / 2.0));
+        grid_vertices.push(1.0 - (y_grid / 2.0));
+        grid_vertices.push(0.0);
+
+        let cell_program = match &self.cell_program {
+            Some(program) => program,
+            None => return (),
+        };
+
+        let grid_program = match &self.grid_program {
+            Some(program) => program,
+            None => return (),
+        };
+
+        render::render(cell_program, vertices, grid_program, grid_vertices).expect("error rendering");
+    }
+
+    pub fn render_to_string(&self) -> String {
         self.to_string()
     }
 
@@ -326,6 +427,10 @@ impl Universe {
 
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    pub fn size(&self) -> u8 {
+        self.size
     }
 
     pub fn cells(&self) -> *const Cell {
@@ -342,6 +447,10 @@ impl Universe {
         self.height = height;
         self.cells[0] = (0..self.width * height).map(|_i| Cell::Dead).collect();
         self.cells[1] = (0..self.width * height).map(|_i| Cell::Dead).collect();
+    }
+
+    pub fn set_size(&mut self, size: u32) {
+        self.size = size as u8;
     }
 
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
@@ -439,19 +548,18 @@ mod tests {
         input_universe.set_height(6);
         input_universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
 
-
         let mut expected_universe = Universe::new();
         expected_universe.set_width(6);
         expected_universe.set_height(6);
         expected_universe.set_cells(&[(2,1), (2,3), (3,2), (3,3), (4,2)]);
 
         println!("input universe before tick:");
-        println!("{}", input_universe.render());
+        println!("{}", input_universe.render_to_string());
         input_universe.tick();
         println!("\ninput universe:");
-        println!("{}", input_universe.render());
+        println!("{}", input_universe.render_to_string());
         println!("\nexpected universe:");
-        println!("{}", expected_universe.render());
+        println!("{}", expected_universe.render_to_string());
         assert_eq!(&input_universe.get_cells(), &expected_universe.get_cells());
     }
 }
