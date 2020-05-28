@@ -130,17 +130,6 @@ pub fn render(
     Ok(())
 }
 
-
-//
-// pub fn set_canvas_size(height: u32, width: u32) -> Result<(), JsValue> {
-//     let document = web_sys::window().unwrap().document().unwrap();
-//     let canvas = document.get_element_by_id("game-of-life-canvas").unwrap();
-//     let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
-//     canvas.set_width(width);
-//     canvas.set_height(height);
-//     Ok(())
-// }
-
 fn get_context() -> Result<web_sys::WebGlRenderingContext, JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.get_element_by_id("game-of-life-canvas").unwrap();

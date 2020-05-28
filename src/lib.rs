@@ -268,9 +268,6 @@ impl Universe {
             (None, None)
         };
 
-
-        // render::set_canvas_size(((size as u32 + 1) * height + 1) * 4, ((size as u32 + 1) * width + 1) * 2)
-        //     .expect("Universe::new() calling render::set_canvas_size() failed");
         let cells_0: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells_1: Vec<Cell> = (0..width * height).map(|_i| Cell::Dead).collect();
         let cells = [cells_0, cells_1];
@@ -341,7 +338,6 @@ impl Universe {
         let mut grid_vertices: Vec<f32> = vec![];
         let x_pixels = (self.size as u32 + 1) * self.width + 1;
         let y_pixels = (self.size as u32 + 1) * self.height + 1;
-        // let z = 0.0;
         let x_start = -1.0;
         let y_start = -1.0;
         let x_grid = 2.0 / x_pixels as f32;
@@ -551,7 +547,6 @@ mod tests {
         input_universe.set_width(6);
         input_universe.set_height(6);
         input_universe.set_cells(&[(1,2), (2,3), (3,1), (3,2), (3,3)]);
-
 
         let mut expected_universe = Universe::new();
         expected_universe.set_width(6);
