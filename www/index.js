@@ -25,8 +25,8 @@ function main() {
         const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
         const canvasBottom = (boundingRect.bottom - event.clientY) * scaleY;
 
-        const row = (Math.min(Math.floor(canvasBottom / (cellSize + 1)), height - 1)) % height;
-        const col = (Math.min(Math.floor(canvasLeft / (cellSize + 1)), width - 1) + width) % width;
+        const row = (Math.min(Math.floor(canvasBottom / (cellSize + 1)), height - 1));
+        const col = (Math.min(Math.floor(canvasLeft / (cellSize + 1)), width - 1));
 
         if (insertPopulation === "toggle") {
             universe.toggle_cell(row, col);
