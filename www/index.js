@@ -113,17 +113,17 @@ function main() {
 
 
     populationDensitySlider.oninput = function() {
-        populationDensityValue.innerHTML = this.value;
+        populationDensityValue.innerHTML = this.valueAsNumber;
     }
 
     universeSpeed.oninput = function() {
-        if (this.value >= 56) {
-            speedUpFactor = Math.ceil((this.value - 50) / 50 * 10);
+        if (this.valueAsNumber >= 56) {
+            speedUpFactor = Math.ceil((this.valueAsNumber - 50) / 50 * 10);
             speedDown = false;
             speedUp = true;
             universeSpeedValue.innerHTML = speedUpFactor + "x normal";
-        } else if (this.value <= 45) {
-            speedDownFactor = Math.ceil(10.0 - (this.value / 50) * 10);
+        } else if (this.valueAsNumber <= 45) {
+            speedDownFactor = Math.ceil(10.0 - (this.valueAsNumber / 50) * 10);
             speedDownCounter = speedDownFactor;
             speedDown = true;
             speedUp = false;
@@ -168,7 +168,7 @@ function main() {
     });
 
     randomPopulation.addEventListener("click", event => {
-        universe.random_population(populationDensitySlider.value / 100);
+        universe.random_population(populationDensitySlider.valueAsNumber / 100);
         universe.render();
     });
 
@@ -178,15 +178,15 @@ function main() {
         } else if (vSizeSet.valueAsNumber < 1) {
             vSizeSet.valueAsNumber = 1;
         } else if (vSizeSet.valueAsNumber > 768 ) {
-            vSizeSet.value = 768;
+            vSizeSet.valueAsNumber = 768;
         }
         if (isNaN(hSizeSet.valueAsNumber)) {
             hSizeSet.valueAsNumber = height;
-        } if (hSizeSet.value < 1) {
+        } if (hSizeSet.valueAsNumber < 1) {
             // debugger;
-            hSizeSet.value = 1;
-        } else if (hSizeSet.value > 768 ) {
-            hSizeSet.value = 768;
+            hSizeSet.valueAsNumber = 1;
+        } else if (hSizeSet.valueAsNumber > 768 ) {
+            hSizeSet.valueAsNumber = 768;
         }
         if (isNaN(cellSizeSet.valueAsNumber)) {
             cellSizeSet.valueAsNumber = cellSize;
