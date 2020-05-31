@@ -47,7 +47,6 @@ impl<'a> Drop for Timer<'a> {
     }
 }
 
-#[wasm_bindgen]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Cell {
@@ -64,7 +63,6 @@ impl Cell {
     }
 }
 
-#[wasm_bindgen]
 pub struct Population {
     height: u32,
     width: u32,
@@ -255,9 +253,9 @@ impl Universe {
 impl Universe {
     pub fn new() -> Universe {
         utils::set_panic_hook();
-        let width = 192;
-        let height = 128;
-        let size = 5;
+        let width = 64;
+        let height = 64;
+        let size = 8;
 
         let (cell_program, grid_program) = if !cfg!(test) {
             match render::start((size as u32 + 1) * width + 1, (size as u32 + 1) * height + 1) {
@@ -284,7 +282,7 @@ impl Universe {
     }
 
     pub fn tick(&mut self) {
-        let _timer = Timer::new("Universe::tick()");
+        // let _timer = Timer::new("Universe::tick()");
 
         for row in 0..self.height {
             for col in 0..self.width {
@@ -453,6 +451,16 @@ impl Universe {
         self.size = size as u8;
     }
 
+    pub fn resize(&mut self, width: u32, height: u32, size: u32) {
+        self.width = width;
+        self.height = height;
+        self.size = size as u8;
+        self.cells[0] = (0..width * height).map(|_i| Cell::Dead).collect();
+        self.cells[1] = (0..width * height).map(|_i| Cell::Dead).collect();
+        render::resize_canvas((size as u32 + 1) * width + 1, (size as u32 + 1) * height + 1)
+            .unwrap();
+    }
+
     pub fn toggle_cell(&mut self, row: u32, col: u32) {
         let idx = self.get_index(row, col);
         self.cells[self.cells_idx][idx].toggle();
@@ -504,13 +512,13 @@ impl Universe {
         self.clear_cells(0, 0, self.width, self.height);
     }
 
-    pub fn random_population(&mut self) {
+    pub fn random_population(&mut self, density: f32) {
         self.clear_cells(0, 0, self.width, self.height);
         for row in 0..self.height {
             for col in 0..self.width {
                 let idx = self.get_index(row, col);
                 self.cells[self.cells_idx][idx] = {
-                    if Math::random() < 0.5 {
+                    if Math::random() < density as f64 {
                         Cell::Alive
                     } else {
                         Cell::Dead

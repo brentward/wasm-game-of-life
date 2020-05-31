@@ -33,41 +33,68 @@
         white-space: pre;
         font-family: monospace;
       }
+      .insertSelection {
+        margin-left: 25px;
+      }
+      .universeSize {
+        margin-left: 25px;
+      }
     </style>
   </head>
   <body>
     <div class="row">
       <div class="column left">
         <h2>WASM Game of Life</h2>
-        <h2>Controls</h2>
-        <div id="fps"></div><br>
-        <button id="play-pause"></button><br><br>
+        <p>Seed the universe with an initial population of cells and run the simulation to see how the population spreads</p>
+        <button id="play-pause"></button><br>
+        <div class="slidecontainer">
+          <input type="range" min="1" max="100" value="50" class="slider" id="universeSpeed">
+        </div>
+        <span id="universeSpeedValue"></span> speed<br><br><br>
+        <button id="random-population"></button><br>
+        <div class="slidecontainer">
+          <input type="range" min="0" max="100" value="50" class="slider" id="populationDensity">
+        </div>
+        density: <span id="populationDensityValue"></span>%
+        <br><br><br>
+        Clicking in the universe will:<br>
+        <input type="radio" id="toggle" name="gridAction" value="toggle">
+        <label for="toggle">Toggle cell value</label><br>
+        <input type="radio" id="insertPopulation" name="gridAction" value="insertPopulation">
+        <label for="insertPopulation">Insert selected population:</label><br>
+        <div class="insertSelection">
+          <select name="insert" id="insert">
+            <option value="block">Block</option>
+            <option value="blinker">Blinker</option>
+            <option value="toad">Toad</option>
+            <option value="beacon">Beacon</option>
+            <option value="pulsar">Pulsar</option>
+            <option value="i-column">I Column</option>
+            <option value="glider">Glider</option>
+            <option value="lwss">Light Weight Spaceship</option>
+            <option value="mwss">Middle Weight Spaceship</option>
+            <option value="hwss">Heavy Weight Spaceship</option>
+          </select><br><br>
+          <input type="checkbox" id="h-flip">
+          <label id="hFlipLabel" for="h-flip">horizontal flip</label><br>
+          <input type="checkbox" id="v-flip">
+          <label id="vFlipLabel" for="v-flip">vertical flip</label><br>
+          <input type="checkbox" id="invert">
+          <label id="invertLabel" for="invert">invert</label><br><br>
+        </div>
+        Universe size:<br>
+        <div class="universeSize">
+          Width: <input type="number" id="hSize"><br>
+          Height: <input type="number" id="vSize"><br>
+          Cell size: <input type="number" id="cellSize"><br>
+
+        </div>
+        <button id="resize-universe"></button><br><br>
         <button id="destroy-all-life"></button>
-        <button id="random-population"></button><br><br>
-        <label for="insert">Insert population:</label>
-        <select name="insert" id="insert">
-          <option value="toggle">Toggle</option>
-          <option value="block">Block</option>
-          <option value="blinker">Blinker</option>
-          <option value="toad">Toad</option>
-          <option value="beacon">Beacon</option>
-          <option value="pulsar">Pulsar</option>
-          <option value="i-column">I Column</option>
-          <option value="glider">Glider</option>
-          <option value="lwss">Light Weight Spaceship</option>
-          <option value="mwss">Middle Weight Spaceship</option>
-          <option value="hwss">Heavy Weight Spaceship</option>
-        </select><br><br>
-        <input type="checkbox" id="h-flip">
-        <label for="h-flip">horizontal flip</label><br>
-        <input type="checkbox" id="v-flip">
-        <label for="v-flip">vertical flip</label><br>
-        <input type="checkbox" id="invert">
-        <label for="invert">invert</label><br>
       </div>
       <div class="column right">
-        <h2>Universe</h2>
         <canvas id="game-of-life-canvas"></canvas>
+        <div id="fps"></div><br>
       </div>
     </div>
     <script src="./bootstrap.js"></script>
