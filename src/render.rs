@@ -34,7 +34,7 @@ pub fn start(width: u32, height: u32) -> Result<(Option<WebGlProgram>, Option<We
         WebGlRenderingContext::FRAGMENT_SHADER,
         r#"
         void main() {
-            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+            gl_FragColor = vec4(0.7, 0.8, 0.71, 1.0);
         }
     "#,
     )?;
@@ -44,7 +44,7 @@ pub fn start(width: u32, height: u32) -> Result<(Option<WebGlProgram>, Option<We
         WebGlRenderingContext::FRAGMENT_SHADER,
         r#"
         void main() {
-            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0);
+            gl_FragColor = vec4(0.15, 0.25, 0.15, 1.0);
         }
     "#,
     )?;
@@ -86,7 +86,7 @@ pub fn render(
     context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
     context.enable_vertex_attrib_array(0);
 
-    context.clear_color(0.95, 0.95, 0.95, 1.0);
+    context.clear_color(0.3, 0.3, 0.3, 1.0);
     context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
 
     context.draw_arrays(
@@ -140,6 +140,20 @@ fn get_context() -> Result<web_sys::WebGlRenderingContext, JsValue> {
         .unwrap()
         .dyn_into::<WebGlRenderingContext>()?;
     Ok(context)
+}
+
+pub fn resize_canvas(width: u32, height: u32) -> Result<(), JsValue> {
+    let document = web_sys::window().unwrap().document().unwrap();
+    let canvas = document.get_element_by_id("game-of-life-canvas").unwrap();
+    let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+    canvas.set_width(width);
+    canvas.set_height(height);
+    let context = canvas
+        .get_context("webgl")?
+        .unwrap()
+        .dyn_into::<WebGlRenderingContext>()?;
+    context.viewport(0, 0, width as i32, height as i32);
+    Ok(())
 }
 
 pub fn compile_shader(
